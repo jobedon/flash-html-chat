@@ -56,7 +56,7 @@ app.use(function(err, req, res, next) {
 });
 
 var http=require("http");
-var io=require("socket.io").listen(app.listen(3000));
+var io=require("socket.io").listen(app.listen(5000));
 
 
 io.configure(function() {
