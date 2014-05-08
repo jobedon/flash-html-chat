@@ -1,0 +1,45 @@
+<html ng-app="chatApp">
+	<head>
+	
+		<link rel='stylesheet' id='all-css-0' href='css/style.css' type='text/css'/>
+		
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="js/angular.min.js"></script>
+		<script src="js/main.js"></script>
+		
+	</head>
+	
+	<body>
+		<div class="container">
+			<div class="flash-panel panel">
+				<h1>FLASH CLIENT</h1>
+				<embed width="100%" height="1000" src="flash/MainOptionalSOlisten.swf"/>
+			</div>
+			
+			<div class="html-panel panel">
+				<h1>HTML CLIENT</h1>
+				<div class="main-panel" ng-controller="ChatCrtl">
+					
+					<div class="chat-panel">
+						<p ng-repeat="chatmsg in msgs track by $index">{{chatmsg}}</p>
+					</div>
+					
+					
+					<br>
+					<input type="text" ng-model="msg.text"/>
+					<button ng-click="sendMsg()">Send</button>
+					<br><br>
+					
+						
+					<div class="console-panel">
+						<p ng-repeat="logmsg in logmsgs track by $index">{{logmsg}}</p>
+					</div>
+					
+					
+				</div>
+			</div>
+			<div class="div-clear"></div>
+		</div>
+	</body>
+	
+</html>
