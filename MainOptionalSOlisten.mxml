@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:mx="library://ns.adobe.com/flex/mx"
+               minWidth="955" minHeight="600" applicationComplete="applicationComplete(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[	
+			
+			import com.pnwrain.flashsocket.FlashSocket;
+			import com.pnwrain.flashsocket.events.FlashSocketEvent;
+
+			import mx.events.FlexEvent;
+			
+			
+			//--------------------------------
+			/*     Variable declarations    */
+			//--------------------------------
+			
+			[Bindable] private var swfURL:String = "";					   
+			private var myTimer:Timer;
+			
+			[Bindable] private var socketURL: String = "localhost:3000";
+			protected var socket:FlashSocket;
+			
+			// count of msgs sent & received since application start
+			[Bindable] private var _msg_scount:int = 0;
+			[Bindable] private var _msg_rcount:int = 0;			
+			
+			/* Controls "send many messages"*/			
+			// how many messages to send each blast
+			[Bindable] private var _messageCount : String = int(20).toString();			
+			// interval between blasts
+			[Bindable] private var _millisecondInterval : String = int(1000).toString();			
+			// number of blasts
+			[Bindable] private var _blastCnt : String = int(200).toString();	
+			
+			
+			
+			//--------------------------------
+			/*     Application Complete     */
+			//--------------------------------
+			
+			private function applicationComplete(event:FlexEvent):void{		
+				swfURL = this.loaderInfo.url;
+				swfURL = swfURL.substr(0, swfURL.lastIndexOf("/") + 1);				
+				buttons(false);
+				explain.text = "TO RUN TEST:\n* Enter the message you want to send.\n" +
+					"* Enter the url to connect using FlashSocketIO, and click on the socket radio button.\n" + 					
+					"* For a single message:\n" +
+					"   - Click 'Send'\n" +
+					"* For multiple messages:\n"+
+					"   - Select the number of msgs per blast.\n" +
+					"   - Select the interval between blasts (ms).\n" +
+					"   - Select the number of blasts.\n" +
+					"   - Click 'Send many messages' to run test.";
+			}			
+			
+			
+			
+			//--------------------------------
+			/*       FlashSocketIO Handler       */
+			//--------------------------------	
+
+			private function handleSocketIO():void {
+				socket = new FlashSocket(wsUrl.text);
+				socket.addEventListener(FlashSocketEvent.CONNECT, onConnect);
+				socket.addEventListener(FlashSocketEvent.MESSAGE, onMessage);
+				socket.addEventListener(FlashSocketEvent.IO_ERROR, onError);
+				socket.addEventListener(FlashSocketEvent.SECURITY_ERROR, onError);
+			}
+			
+			protected function onConnect(event:FlashSocketEvent):void{
+				clearStatus();
+				setStatus("Socket: 'connected'");
+				buttons(true);
+			}
+			
+			private function onMessage(event:FlashSocketEvent):void {
+				outputTf.text += '\n\t'+event.data;
+				_msg_rcount++;
+			}
+			
+			private function onError(event:IOErrorEvent):void {
+				setStatus("\nonError: " + event);
+			}
+						
+			
+			//--------------------------------
+			/*   Function implementations   */
+			//--------------------------------
+			
+			private function buttons(value:Boolean):void {
+				sendBtn.enabled = value;
+				//sendManyBtn.enabled = value;
+				closeBtn.enabled = value;
+				stopBtn.enabled = value;
+			}
+			
+			private function sendMessageEvent(e:TimerEvent):void {				
+				for(var i:int = 1; i <=  int(_messageCount); i++) {															
+					var message:String = messageTf.text;
+					if(socket.connected) {
+						socket.send(message,'message');
+						_msg_scount = _msg_scount + 1;
+					}
+				}
+			}
+			
+			private function onClickSendBtn():void {
+				var message:String = messageTf.text;
+				if(socket.connected) {
+					socket.send("flash client : "+message,'message');
+					_msg_scount = _msg_scount + 1;
+				}
+			}
+			
+			private function onClickCloseBtn():void {
+				stopTimer("");
+				setStatus("\n\nSocket: 'disconnected'");
+				socket = null;
+				buttons(false);
+			}
+			
+			private function stopTimer(text:String):void {
+				if (myTimer) {
+					myTimer.removeEventListener(TimerEvent.TIMER, sendMessageEvent);
+					myTimer.stop();
+				}
+				setStatus(text);
+			}
+			
+			private function sendManyMessages() : void {
+				//_messageCount = _messageCountLabel.text;
+				//myTimer = new Timer(int(_millisecondIntervalLabel.text),int(_blastCntLabel.text));
+				myTimer.addEventListener(TimerEvent.TIMER, sendMessageEvent);
+				myTimer.start();
+				setStatus("\n\nSending messages...");
+			}
+			
+			protected function setStatus(msg:String):void{
+				statusOutput.text += msg;			
+			}
+			
+			protected function clearStatus():void{
+				statusOutput.text = "";
+				this.currentState = "";
+			}
+			
+		]]>	
+	</fx:Script>
+	<mx:VBox>
+		<mx:HBox>
+			<mx:VBox>
+				<mx:VBox borderStyle="solid" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10">			
+					<mx:TextArea  width="580" height="437" id="outputTf" />
+					<mx:HBox>
+						<mx:TextInput id="messageTf" text="test"                          />
+						<mx:Button  label="Send" id="sendBtn"  click="onClickSendBtn()"   />	
+					</mx:HBox> 	
+				</mx:VBox> 			
+				
+				<mx:HBox  width="603" borderStyle="solid" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10">	                     
+					<mx:Label text="Msgs sent:"                                />
+					<mx:TextInput width="50" text="{_msg_scount}"              />	
+					<mx:Label text="Msgs rcvd:"                                />
+					<mx:TextInput width="50" text="{_msg_rcount}"              />
+					<mx:Button  label="Stop" id="stopBtn"  click="stopTimer('\n\nMessages stopped.')"   />
+				</mx:HBox>
+				<mx:HBox  width="603" borderStyle="solid" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10">
+					<mx:Label width="20"                                       />				
+					<mx:RadioButton groupName="connectType" 
+									id="ws"
+									label="SocketIO" 
+									click="handleSocketIO();"
+									/>	
+					<mx:TextInput width="200" id="wsUrl" text="{socketURL}"/>
+					<mx:Button  label="Close" id="closeBtn"  click="onClickCloseBtn()"   />
+				</mx:HBox>			
+			</mx:VBox>
+			
+		</mx:HBox>
+		<mx:HBox>			
+			<mx:TextArea  width="345" height="200" id="statusOutput" />
+			<mx:TextArea  width="250" height="200" id="explain" />
+		</mx:HBox>
+	</mx:VBox>
+</s:Application>
+
+
+
